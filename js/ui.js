@@ -3,9 +3,9 @@
  * It only DISPLAYS state; it never decides anything.
  * Security: we use textContent / createElement only — never innerHTML.
  */
-import { formatTime, formatClock, splitTime, pad, findExtremes } from "./time";
+import { formatTime, formatClock, splitTime, pad, findExtremes } from "./time.js";
  const RING_CIRCUMFERENCE=816.81; // 2 * PI * 130 (matches the CSS token)
- const BASE_TITLE= "Curtain Call . startsWith & Timer";
+ const BASE_TITLE= "Curtain Call . Stopwatch & Timer";
 
  const byId = (id) => {
     const node = document.getElementById(id);

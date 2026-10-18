@@ -80,7 +80,7 @@ function togglePrimary() {
             setStatus("running");
             break;
         case "finished":
-            rest();
+            reset();
             startFresh();
             break;
     }

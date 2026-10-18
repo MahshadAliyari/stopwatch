@@ -69,7 +69,7 @@ if (Number.isNaN(minutes)) {
  * - stopwatch: one full turn per minute
  * - timer: starts full, empties as time runs out
  */
-export function ringProgress({mode, rlapsed, duration}) {
+export function ringProgress({mode, elapsed, duration}) {
     if (mode === "timer") {
         if (duration <= 0) return 0;
         return Math.min(1, Math.max(0, 1-elapsed/duration));
