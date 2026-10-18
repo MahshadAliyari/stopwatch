@@ -1,0 +1,870 @@
+/* ==========================================================
+   Curtain Call — Stopwatch & Timer
+   Theme: crimson velvet + stage black
+   Approach: MOBILE-FIRST
+   - Base rules target a ~360px phone.
+   - Larger screens are enhanced with min-width queries only:
+       ≥ 480px   large phones
+       ≥ 768px   tablets      (centered column, bigger dial)
+       ≥ 1024px  laptops      (two columns: dial | controls)
+       ≥ 1440px  large screens
+   - Hover effects live inside (hover: hover) so touch
+     devices never get "stuck" hover states.
+   ========================================================== */
+
+/* ---------- 1. Design tokens ---------- */
+:root {
+  --black: #070405;
+  --velvet: #1c0b10;
+  --crimson-deep: #5a0f22;
+  --crimson: #a3122f;
+  --crimson-hot: #e0264b;
+  --rose: #ff7a93;
+  --bone: #f4e9e6;
+  --bone-dim: #b9a6a6;
+  --line: rgba(255, 122, 147, 0.16);
+
+  --font-display: "Syne", "Segoe UI", system-ui, sans-serif;
+  --font-digits: "Chivo Mono", ui-monospace, "SF Mono", Consolas, monospace;
+
+  /* Fluid sizing: scales with the viewport, capped per breakpoint */
+  --dial-size: min(88vw, 320px);
+  --gutter: 16px;
+  --gap: 22px; /* vertical rhythm between blocks */
+  --radius-pill: 999px;
+  --radius-md: 14px;
+  --tap: 48px; /* minimum comfortable touch target */
+  --fold: 56px; /* curtain fold width */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --circumference: 816.81; /* 2 * PI * 130 — JS sets stroke-dashoffset from this */
+}
+
+/* ---------- 2. Reset & base ---------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background:
+    radial-gradient(
+      90% 40% at 50% 34%,
+      rgba(163, 18, 47, 0.3),
+      transparent 70%
+    ),
+    var(--black);
+  color: var(--bone);
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+} /* no double-tap zoom delay */
+[hidden] {
+  display: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--rose);
+  outline-offset: 3px;
+}
+
+/* ---------- 3. The curtain (page backdrop) ---------- */
+.curtain {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 38vh;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.55) 0,
+      rgba(0, 0, 0, 0) calc(var(--fold) * 0.4),
+      rgba(255, 90, 120, 0.1) calc(var(--fold) * 0.65),
+      rgba(0, 0, 0, 0.55) var(--fold)
+    ),
+    linear-gradient(180deg, var(--crimson-deep), var(--velvet) 70%, transparent);
+  -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 30%, transparent 100%);
+  opacity: 0.85;
+}
+
+/* ---------- 4. Layout (single column, thumb-friendly) ---------- */
+.stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin-inline: auto;
+  /* safe-area keeps content clear of notches and home bars */
+  padding: max(24px, env(safe-area-inset-top))
+    max(var(--gutter), env(safe-area-inset-right))
+    max(32px, env(safe-area-inset-bottom))
+    max(var(--gutter), env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap);
+}
+
+.masthead {
+  text-align: center;
+}
+
+/* Controls column: stacked on mobile, sits beside the dial on laptops */
+.panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--gap);
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-shadow: 0 2px 24px rgba(224, 38, 75, 0.55);
+}
+
+.tagline {
+  margin: 8px 0 0;
+  color: var(--bone-dim);
+  font-size: 0.9rem;
+}
+
+/* ---------- 5. Mode tabs ---------- */
+.tabs {
+  display: flex;
+  width: 100%;
+  max-width: 320px;
+  padding: 4px;
+  gap: 4px;
+  background: rgba(7, 4, 5, 0.7);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.tab {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 16px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-pill);
+  color: var(--bone-dim);
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition:
+    color 0.25s var(--ease),
+    background 0.25s var(--ease),
+    box-shadow 0.25s var(--ease);
+}
+.tab[aria-selected="true"] {
+  color: var(--bone);
+  background: linear-gradient(135deg, var(--crimson), var(--crimson-deep));
+  box-shadow:
+    0 4px 18px rgba(163, 18, 47, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+/* ---------- 6. The dial (signature element) ---------- */
+.dial {
+  position: relative;
+  width: var(--dial-size);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 30%,
+    var(--velvet),
+    var(--black) 72%
+  );
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 24px 60px -20px rgba(224, 38, 75, 0.45),
+    inset 0 0 50px rgba(0, 0, 0, 0.8);
+}
+
+/* Spotlight bloom behind the dial while running */
+.dial::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(224, 38, 75, 0.4), transparent 65%);
+  opacity: 0;
+  transition: opacity 0.6s var(--ease);
+}
+.stage[data-state="running"] .dial::before {
+  opacity: 1;
+  animation: bloom 2.4s ease-in-out infinite;
+}
+
+/* 60 tick marks via conic gradient, masked into a ring */
+.dial__ticks {
+  position: absolute;
+  inset: 3%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from -0.5deg,
+    var(--crimson-hot) 0 1deg,
+    transparent 1deg 6deg
+  );
+  -webkit-mask-image: radial-gradient(
+    circle,
+    transparent 89%,
+    #000 89.5%,
+    #000 97%,
+    transparent 97.5%
+  );
+  mask-image: radial-gradient(
+    circle,
+    transparent 89%,
+    #000 89.5%,
+    #000 97%,
+    transparent 97.5%
+  );
+  opacity: 0.45;
+}
+
+/* Progress ring */
+.dial__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.dial__ring circle {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+.ring-track {
+  stroke: rgba(255, 122, 147, 0.08);
+}
+.ring-progress {
+  stroke: var(--crimson-hot);
+  stroke-dasharray: var(--circumference);
+  stroke-dashoffset: var(--circumference); /* JS updates this */
+  filter: drop-shadow(0 0 6px rgba(224, 38, 75, 0.9));
+  transition: stroke 0.3s var(--ease);
+}
+
+/* Readout */
+.readout {
+  position: relative;
+  text-align: center;
+  padding-inline: 6%;
+}
+
+.time {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+  font-family: var(--font-digits);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.time__main {
+  font-size: clamp(2.5rem, 13.5vw, 3.4rem);
+  font-weight: 300;
+  letter-spacing: -0.04em;
+}
+.time__colon {
+  display: inline-block;
+  margin-inline: 0.04em;
+  color: var(--crimson-hot);
+  font-weight: 500;
+}
+.time__sub {
+  font-size: clamp(1.05rem, 5vw, 1.35rem);
+  font-weight: 500;
+  color: var(--rose);
+}
+.stage[data-state="running"] .time__colon {
+  animation: blink 1s steps(1) infinite;
+}
+
+.status {
+  margin: 12px 0 0;
+  min-height: 1.5em;
+  font-size: 0.8rem;
+  color: var(--bone-dim);
+}
+
+/* ---------- 7. Mode-specific sections ---------- */
+.timer-only,
+.stopwatch-only {
+  display: none;
+}
+
+.stage[data-mode="timer"] .timer-only {
+  display: flex;
+}
+.stage[data-mode="stopwatch"] .stopwatch-only {
+  display: block;
+}
+
+/* Timer setup panel */
+.setup {
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 12px;
+  background: rgba(18, 10, 12, 0.75);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.setup__fields {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+}
+.setup__sep {
+  padding-bottom: 8px;
+  font-family: var(--font-digits);
+  font-size: 1.6rem;
+  color: var(--crimson-hot);
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  text-align: center;
+}
+.field__label {
+  font-size: 0.8rem;
+  color: var(--bone-dim);
+}
+
+.field__input {
+  width: 88px;
+  min-height: var(--tap);
+  padding: 8px;
+  text-align: center;
+  font-family: var(--font-digits);
+  font-size: 1.5rem; /* ≥16px: prevents iOS Safari auto-zoom on focus */
+  font-weight: 500;
+  background: var(--black);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+.field__input::-webkit-outer-spin-button,
+.field__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.field__input:focus {
+  outline: none;
+  border-color: var(--crimson-hot);
+  box-shadow: 0 0 0 3px rgba(224, 38, 75, 0.25);
+}
+.field__input[aria-invalid="true"] {
+  border-color: var(--crimson-hot);
+}
+.field__input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Presets: 2×2 grid on phones */
+.presets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+.chip {
+  min-height: 44px;
+  padding: 0 14px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  color: var(--bone-dim);
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
+}
+.chip:active {
+  border-color: var(--crimson-hot);
+  background: rgba(163, 18, 47, 0.25);
+  color: var(--bone);
+}
+.chip:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.field-error {
+  margin: 0;
+  padding: 10px 12px;
+  width: 100%;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--rose);
+  background: rgba(163, 18, 47, 0.18);
+  border: 1px solid rgba(224, 38, 75, 0.4);
+  border-radius: 10px;
+}
+
+/* ---------- 8. Controls (bottom-weighted, big targets) ---------- */
+.controls {
+  display: grid;
+  /* secondary | PRIMARY (wider) | secondary */
+  grid-template-columns: 1fr 1.5fr 1fr;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.btn {
+  min-height: var(--tap);
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line);
+  background: rgba(18, 10, 12, 0.8);
+  color: var(--bone);
+  font-weight: 700;
+  font-size: 1rem;
+  transition:
+    transform 0.15s var(--ease),
+    background 0.25s var(--ease),
+    border-color 0.25s var(--ease),
+    box-shadow 0.25s var(--ease),
+    opacity 0.25s;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+  border-color: var(--crimson-hot);
+}
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  min-height: 60px;
+  font-size: 1.1rem;
+  border-color: transparent;
+  background: linear-gradient(
+    135deg,
+    var(--crimson-hot),
+    var(--crimson) 60%,
+    var(--crimson-deep)
+  );
+  box-shadow:
+    0 10px 28px -6px rgba(224, 38, 75, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+/* While running, the primary button becomes a quiet outlined "Pause" */
+.stage[data-state="running"] .btn--primary {
+  background: transparent;
+  border-color: var(--crimson-hot);
+  box-shadow: 0 0 0 4px rgba(224, 38, 75, 0.12);
+}
+
+/* ---------- 9. Laps ---------- */
+.laps {
+  width: 100%;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+.laps__title {
+  margin: 14px 0 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.laps__empty {
+  margin: 0;
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--bone-dim);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius-md);
+}
+.laps__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--crimson) transparent;
+}
+.laps__list:empty {
+  display: none;
+}
+.laps:has(.laps__list:not(:empty)) .laps__empty {
+  display: none;
+}
+
+.lap {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-digits);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.88rem;
+}
+.lap__index {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--bone-dim);
+}
+.lap__split {
+  color: var(--rose);
+}
+.lap__total {
+  min-width: 6.5ch;
+  text-align: right;
+}
+.lap--best .lap__split {
+  color: #7dffb0;
+}
+.lap--worst .lap__split {
+  color: var(--crimson-hot);
+}
+
+/* ---------- 10. State styles ---------- */
+.stage[data-state="finished"] .time {
+  animation: finish-flash 0.9s ease-in-out 4;
+}
+.stage[data-state="finished"] .ring-progress {
+  stroke: var(--rose);
+}
+.stage[data-state="finished"] .dial {
+  box-shadow:
+    0 0 0 1px var(--crimson-hot),
+    0 0 70px rgba(224, 38, 75, 0.65),
+    inset 0 0 50px rgba(0, 0, 0, 0.8);
+}
+/* Inputs lock while a timer is counting */
+.stage[data-state="running"] .field__input,
+.stage[data-state="running"] .chip {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+/* ---------- 11. Footer ---------- */
+.foot {
+  font-size: 0.75rem;
+  color: var(--bone-dim);
+  opacity: 0.6;
+}
+.foot p {
+  margin: 0;
+}
+
+/* ---------- 12. Keyframes ---------- */
+@keyframes bloom {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.25;
+  }
+}
+@keyframes finish-flash {
+  0%,
+  100% {
+    color: var(--bone);
+    text-shadow: none;
+  }
+  50% {
+    color: var(--rose);
+    text-shadow: 0 0 28px var(--crimson-hot);
+  }
+}
+
+/* ==========================================================
+   ENHANCEMENTS — only ever add; never undo the mobile base
+   ========================================================== */
+
+/* ---------- ≥ 480px: large phones ---------- */
+@media (min-width: 480px) {
+  :root {
+    --dial-size: 360px;
+    --gutter: 24px;
+    --fold: 72px;
+    --gap: 26px;
+  }
+  .stage {
+    max-width: 480px;
+  }
+  .title {
+    font-size: 2.4rem;
+  }
+  .tagline {
+    font-size: 1rem;
+  }
+  .time__main {
+    font-size: 3.8rem;
+  }
+  .time__sub {
+    font-size: 1.5rem;
+  }
+  .presets {
+    grid-template-columns: repeat(4, auto);
+    justify-content: center;
+    width: auto;
+  }
+  .field__input {
+    width: 96px;
+  }
+  .laps__list {
+    max-height: 260px;
+  }
+}
+
+/* ---------- ≥ 768px: tablets (still one centered column) ---------- */
+@media (min-width: 768px) {
+  :root {
+    --dial-size: 420px;
+    --fold: 96px;
+    --gap: 32px;
+  }
+  .curtain {
+    height: 44vh;
+  }
+  .stage {
+    max-width: 640px;
+    padding-block: 56px 64px;
+  }
+  .title {
+    font-size: 2.8rem;
+  }
+  .tabs {
+    max-width: 360px;
+  }
+  .time__main {
+    font-size: 4.6rem;
+  }
+  .time__sub {
+    font-size: 1.8rem;
+  }
+  .status {
+    font-size: 0.9rem;
+  }
+  .setup {
+    padding: 22px;
+    gap: 18px;
+  }
+  .controls {
+    max-width: 440px;
+    gap: 14px;
+  }
+  .laps__list {
+    max-height: 300px;
+  }
+  .lap {
+    padding-block: 14px;
+    font-size: 1rem;
+  }
+}
+
+/* ---------- ≥ 1024px: laptops — two columns ----------
+   Header row:  title (left)  |  mode tabs (right)
+   Main row:    dial          |  setup + controls + laps
+   Footer row:  centered
+   --------------------------------------------------- */
+@media (min-width: 1024px) {
+  :root {
+    --dial-size: clamp(340px, 62vh, 460px); /* never taller than the screen */
+    --fold: 120px;
+    --gap: 28px;
+  }
+  .curtain {
+    height: 50vh;
+  }
+
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "masthead tabs"
+      "dial     panel"
+      "foot     foot";
+    align-items: center;
+    align-content: center;
+    column-gap: 72px;
+    row-gap: 40px;
+    max-width: 1080px;
+    min-height: 100dvh;
+    padding-block: 48px 36px;
+  }
+
+  .masthead {
+    grid-area: masthead;
+    justify-self: start;
+    text-align: left;
+  }
+  .tabs {
+    grid-area: tabs;
+    justify-self: end;
+    width: 320px;
+    max-width: none;
+  }
+  .dial {
+    grid-area: dial;
+    justify-self: center;
+  }
+  .panel {
+    grid-area: panel;
+    justify-self: center;
+    max-width: 460px;
+  }
+  .foot {
+    grid-area: foot;
+    justify-self: center;
+  }
+
+  .title {
+    font-size: 3rem;
+  }
+  .time__main {
+    font-size: 4.8rem;
+  }
+  .time__sub {
+    font-size: 1.9rem;
+  }
+  .controls {
+    max-width: none;
+  }
+  .laps__list {
+    max-height: clamp(150px, 26vh, 300px);
+  }
+}
+
+/* ---------- ≥ 1440px: large screens ---------- */
+@media (min-width: 1440px) {
+  :root {
+    --dial-size: clamp(380px, 64vh, 520px);
+    --fold: 150px;
+  }
+  .stage {
+    max-width: 1240px;
+    column-gap: 112px;
+  }
+  .panel {
+    max-width: 500px;
+  }
+  .title {
+    font-size: 3.4rem;
+  }
+  .time__main {
+    font-size: 5.4rem;
+  }
+  .time__sub {
+    font-size: 2.1rem;
+  }
+  .btn--primary {
+    min-height: 66px;
+    font-size: 1.2rem;
+  }
+}
+
+/* ---------- Hover only on devices that truly hover ---------- */
+@media (hover: hover) {
+  .tab:hover {
+    color: var(--bone);
+  }
+  .chip:hover {
+    color: var(--bone);
+    border-color: var(--crimson-hot);
+    background: rgba(163, 18, 47, 0.25);
+  }
+  .btn:hover:not(:disabled) {
+    border-color: var(--crimson-hot);
+    background: rgba(163, 18, 47, 0.25);
+  }
+  .btn--primary:hover:not(:disabled) {
+    background: linear-gradient(
+      135deg,
+      #ff3a60,
+      var(--crimson-hot) 60%,
+      var(--crimson)
+    );
+    box-shadow:
+      0 14px 36px -6px rgba(224, 38, 75, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* ---------- Short landscape phones: keep the dial on screen ---------- */
+@media (max-height: 480px) and (orientation: landscape) {
+  :root {
+    --dial-size: min(70vh, 260px);
+  }
+  .curtain {
+    height: 30vh;
+  }
+}
+
+/* ---------- Respect reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
