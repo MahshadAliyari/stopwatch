@@ -1,4 +1,19 @@
+/* ==========================================================
+   Curtain Call — Stopwatch & Timer
+   Theme: crimson velvet + stage black
+   Approach: MOBILE-FIRST
+   - Base rules target a ~360px phone.
+   - Larger screens are enhanced with min-width queries only:
+       ≥ 480px   large phones
+       ≥ 768px   tablets      (centered column, bigger dial)
+       ≥ 1024px  laptops      (two columns: dial | controls)
+       ≥ 1440px  large screens
+   - Hover effects live inside (hover: hover) so touch
+     devices never get "stuck" hover states.
+   ========================================================== */
 
+/* ---------- 1. Design tokens ---------- */
+:root {
   --black: #070405;
   --velvet: #1c0b10;
   --crimson-deep: #5a0f22;
@@ -223,14 +238,14 @@ button {
     transparent 1deg 6deg
   );
   -webkit-mask-image: radial-gradient(
-    circle,
+    closest-side,
     transparent 89%,
     #000 89.5%,
     #000 97%,
     transparent 97.5%
   );
   mask-image: radial-gradient(
-    circle,
+    closest-side,
     transparent 89%,
     #000 89.5%,
     #000 97%,
@@ -489,6 +504,11 @@ button {
   box-shadow: 0 0 0 4px rgba(224, 38, 75, 0.12);
 }
 
+/* Timer mode has no laps: hide the button but keep the 3-column layout */
+.stage[data-mode="timer"] #btn-secondary {
+  visibility: hidden;
+}
+
 /* ---------- 9. Laps ---------- */
 .laps {
   width: 100%;
@@ -706,6 +726,11 @@ button {
   }
 }
 
+/* ---------- ≥ 1024px: laptops — two columns ----------
+   Header row:  title (left)  |  mode tabs (right)
+   Main row:    dial          |  setup + controls + laps
+   Footer row:  centered
+   --------------------------------------------------- */
 @media (min-width: 1024px) {
   :root {
     --dial-size: clamp(340px, 62vh, 460px); /* never taller than the screen */
