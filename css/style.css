@@ -1,19 +1,4 @@
-/* ==========================================================
-   Curtain Call — Stopwatch & Timer
-   Theme: crimson velvet + stage black
-   Approach: MOBILE-FIRST
-   - Base rules target a ~360px phone.
-   - Larger screens are enhanced with min-width queries only:
-       ≥ 480px   large phones
-       ≥ 768px   tablets      (centered column, bigger dial)
-       ≥ 1024px  laptops      (two columns: dial | controls)
-       ≥ 1440px  large screens
-   - Hover effects live inside (hover: hover) so touch
-     devices never get "stuck" hover states.
-   ========================================================== */
 
-/* ---------- 1. Design tokens ---------- */
-:root {
   --black: #070405;
   --velvet: #1c0b10;
   --crimson-deep: #5a0f22;
@@ -721,11 +706,6 @@ button {
   }
 }
 
-/* ---------- ≥ 1024px: laptops — two columns ----------
-   Header row:  title (left)  |  mode tabs (right)
-   Main row:    dial          |  setup + controls + laps
-   Footer row:  centered
-   --------------------------------------------------- */
 @media (min-width: 1024px) {
   :root {
     --dial-size: clamp(340px, 62vh, 460px); /* never taller than the screen */

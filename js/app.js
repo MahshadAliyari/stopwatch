@@ -2,29 +2,31 @@
  * app.js — the conductor.
  * Owns the app state and wires clock (engine) + ui (display) + time (logic).
  */
-import {createClock} from "./clock.js";
-import {parseDuration, ringProgress, addLap} from "./time.js";
-import {playAlarm, primeAudio} from "./alarm.js";
+import { createClock } from "./clock.js";
+import { parseDuration, ringProgress, addLap } from "./time.js";
+import { playAlarm, primeAudio } from "./alarm.js";
 import * as ui from "./ui.js";
 
 const state = {
-    mode: "stopwatch",   // "stopwatch" | "timer"
-  status: "idle",      // "idle" | "running" | "paused" | "finished"
-  duration: 0,         // timer length in ms (fixed when the timer starts)
+  mode: "stopwatch", // "stopwatch" | "timer"
+  status: "idle", // "idle" | "running" | "paused" | "finished"
+  duration: 0, // timer length in ms (fixed when the timer starts)
   laps: [],
 };
 
-const clock = createClock({ onTick: handleTick, onFinish: handleFinish});
+const clock = createClock({ onTick: handleTick, onFinish: handleFinish });
 /* ---------- clock callbacks ---------- */
 function handleTick(elapsed) {
   const shown = state.mode === "timer" ? state.duration - elapsed : elapsed;
   ui.renderTime(shown);
-  ui.renderRing(ringProgress({ mode: state.mode, elapsed, duration: state.duration }));
+  ui.renderRing(
+    ringProgress({ mode: state.mode, elapsed, duration: state.duration }),
+  );
   ui.renderTitle(shown);
 }
 function handleFinish() {
-    setStatus("finished");
-    playAlarm();
+  setStatus("finished");
+  playAlarm();
 }
 /* ---------- state helpers ---------- */
 function setStatus(status) {
@@ -65,25 +67,25 @@ function startFresh() {
 }
 
 function togglePrimary() {
-    primeAudio();// user gesture: lets the alarm play later
+  primeAudio(); // user gesture: lets the alarm play later
 
-    switch (state.status) {
-        case "idle":
-            startFresh();
-            break;
-        case "running":
-            clock.pause();
-            setStatus("paused") ;
-            break;
-        case "paused":
-            clock.start();
-            setStatus("running");
-            break;
-        case "finished":
-            reset();
-            startFresh();
-            break;
-    }
+  switch (state.status) {
+    case "idle":
+      startFresh();
+      break;
+    case "running":
+      clock.pause();
+      setStatus("paused");
+      break;
+    case "paused":
+      clock.start();
+      setStatus("running");
+      break;
+    case "finished":
+      reset();
+      startFresh();
+      break;
+  }
 }
 function lap() {
   if (state.mode !== "stopwatch" || state.status !== "running") return;

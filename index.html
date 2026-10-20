@@ -1,111 +1,169 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Curtain Call · Stopwatch &amp; Timer</title>
-  <meta name="description" content="A stopwatch and countdown timer built with vanilla JavaScript.">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Curtain Call · Stopwatch &amp; Timer</title>
+    <meta
+      name="description"
+      content="A stopwatch and countdown timer built with vanilla JavaScript."
+    />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@300;500;700&family=Syne:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@300;500;700&family=Syne:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
 
-  <link rel="stylesheet" href="css/style.css">
-</head>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
 
-<!--
+  <!--
   JS hooks for the next step:
   [data-mode]  on .stage   -> "stopwatch" | "timer"
   [data-state] on .stage   -> "idle" | "running" | "paused" | "finished"
   CSS reads these two attributes, so JS only needs to flip them.
 -->
-<body>
-  <div class="curtain" aria-hidden="true"></div>
+  <body>
+    <div class="curtain" aria-hidden="true"></div>
 
-  <main class="stage" data-mode="stopwatch" data-state="idle">
+    <main class="stage" data-mode="stopwatch" data-state="idle">
+      <header class="masthead">
+        <h1 class="title">STOPWATCH</h1>
+        <p class="tagline">Every second takes the stage.</p>
+      </header>
 
-    <header class="masthead">
-      <h1 class="title">Curtain Call</h1>
-      <p class="tagline">Every second takes the stage.</p>
-    </header>
-
-    <div class="tabs" role="tablist" aria-label="Mode">
-      <button class="tab" role="tab" id="tab-stopwatch" data-mode="stopwatch" aria-selected="true" type="button">Stopwatch</button>
-      <button class="tab" role="tab" id="tab-timer" data-mode="timer" aria-selected="false" type="button">Timer</button>
-    </div>
-
-    <section class="dial" aria-label="Clock face">
-      <div class="dial__ticks" aria-hidden="true"></div>
-
-      <svg class="dial__ring" viewBox="0 0 300 300" aria-hidden="true">
-        <circle class="ring-track" cx="150" cy="150" r="130"/>
-        <circle class="ring-progress" id="ring" cx="150" cy="150" r="130"/>
-      </svg>
-
-      <div class="readout">
-        <output class="time" id="display" role="timer" aria-live="off">
-          <span class="time__main"><span id="minutes">00</span><span class="time__colon">:</span><span id="seconds">00</span></span>
-          <span class="time__sub">.<span id="centis">00</span></span>
-        </output>
-        <p class="status" id="status">Ready when you are</p>
-      </div>
-    </section>
-
-    <!-- Panel: controls column (sits beside the dial on laptops) -->
-    <div class="panel">
-
-    <!-- Timer-only: visible when data-mode="timer" -->
-    <section class="setup timer-only" aria-label="Timer duration">
-      <div class="setup__fields">
-        <label class="field">
-          <span class="field__label">Minutes</span>
-          <input class="field__input" id="input-minutes" type="number" inputmode="numeric" min="0" max="99" value="5">
-        </label>
-        <span class="setup__sep" aria-hidden="true">:</span>
-        <label class="field">
-          <span class="field__label">Seconds</span>
-          <input class="field__input" id="input-seconds" type="number" inputmode="numeric" min="0" max="59" value="0">
-        </label>
+      <div class="tabs" role="tablist" aria-label="Mode">
+        <button
+          class="tab"
+          role="tab"
+          id="tab-stopwatch"
+          data-mode="stopwatch"
+          aria-selected="true"
+          type="button"
+        >
+          Stopwatch
+        </button>
+        <button
+          class="tab"
+          role="tab"
+          id="tab-timer"
+          data-mode="timer"
+          aria-selected="false"
+          type="button"
+        >
+          Timer
+        </button>
       </div>
 
-      <div class="presets" role="group" aria-label="Quick presets">
-        <button class="chip" type="button" data-seconds="60">1 min</button>
-        <button class="chip" type="button" data-seconds="300">5 min</button>
-        <button class="chip" type="button" data-seconds="600">10 min</button>
-        <button class="chip" type="button" data-seconds="1500">25 min</button>
-      </div>
+      <section class="dial" aria-label="Clock face">
+        <div class="dial__ticks" aria-hidden="true"></div>
 
-      <p class="field-error" id="timer-error" role="alert" hidden></p>
-    </section>
+        <svg class="dial__ring" viewBox="0 0 300 300" aria-hidden="true">
+          <circle class="ring-track" cx="150" cy="150" r="130" />
+          <circle class="ring-progress" id="ring" cx="150" cy="150" r="130" />
+        </svg>
 
-    <div class="controls">
-      <button class="btn btn--ghost" id="btn-secondary" type="button" disabled>Lap</button>
-      <button class="btn btn--primary" id="btn-primary" type="button">Start</button>
-      <button class="btn btn--ghost" id="btn-reset" type="button">Reset</button>
-    </div>
+        <div class="readout">
+          <output class="time" id="display" role="timer" aria-live="off">
+            <span class="time__main"
+              ><span id="minutes">00</span><span class="time__colon">:</span
+              ><span id="seconds">00</span></span
+            >
+            <span class="time__sub">.<span id="centis">00</span></span>
+          </output>
+          <p class="status" id="status">Ready when you are</p>
+        </div>
+      </section>
 
-    <!-- Stopwatch-only: lap list -->
-    <section class="laps stopwatch-only" aria-labelledby="laps-title">
-      <h2 class="laps__title" id="laps-title">Laps</h2>
-      <p class="laps__empty" id="laps-empty">No laps yet. Press Lap while the stopwatch runs.</p>
-      <ol class="laps__list" id="laps-list">
-        <!-- JS renders:
+      <!-- Panel: controls column (sits beside the dial on laptops) -->
+      <div class="panel">
+        <!-- Timer-only: visible when data-mode="timer" -->
+        <section class="setup timer-only" aria-label="Timer duration">
+          <div class="setup__fields">
+            <label class="field">
+              <span class="field__label">Minutes</span>
+              <input
+                class="field__input"
+                id="input-minutes"
+                type="number"
+                inputmode="numeric"
+                min="0"
+                max="99"
+                value="5"
+              />
+            </label>
+            <span class="setup__sep" aria-hidden="true">:</span>
+            <label class="field">
+              <span class="field__label">Seconds</span>
+              <input
+                class="field__input"
+                id="input-seconds"
+                type="number"
+                inputmode="numeric"
+                min="0"
+                max="59"
+                value="0"
+              />
+            </label>
+          </div>
+
+          <div class="presets" role="group" aria-label="Quick presets">
+            <button class="chip" type="button" data-seconds="60">1 min</button>
+            <button class="chip" type="button" data-seconds="300">5 min</button>
+            <button class="chip" type="button" data-seconds="600">
+              10 min
+            </button>
+            <button class="chip" type="button" data-seconds="1500">
+              25 min
+            </button>
+          </div>
+
+          <p class="field-error" id="timer-error" role="alert" hidden></p>
+        </section>
+
+        <div class="controls">
+          <button
+            class="btn btn--ghost"
+            id="btn-secondary"
+            type="button"
+            disabled
+          >
+            Lap
+          </button>
+          <button class="btn btn--primary" id="btn-primary" type="button">
+            Start
+          </button>
+          <button class="btn btn--ghost" id="btn-reset" type="button">
+            Reset
+          </button>
+        </div>
+
+        <!-- Stopwatch-only: lap list -->
+        <section class="laps stopwatch-only" aria-labelledby="laps-title">
+          <h2 class="laps__title" id="laps-title">Laps</h2>
+          <p class="laps__empty" id="laps-empty">
+            No laps yet. Press Lap while the stopwatch runs.
+          </p>
+          <ol class="laps__list" id="laps-list">
+            <!-- JS renders:
         <li class="lap">
           <span class="lap__index">Lap 1</span>
           <span class="lap__split">+00:12.45</span>
           <span class="lap__total">00:12.45</span>
         </li>
         -->
-      </ol>
-    </section>
+          </ol>
+        </section>
+      </div>
+      <!-- /.panel -->
 
-    </div><!-- /.panel -->
+      <footer class="foot">
+        <p>Exercise 09 · JS · setInterval</p>
+      </footer>
+    </main>
 
-    <footer class="foot">
-      <p>Exercise 09 · JS · setInterval</p>
-    </footer>
-  </main>
-
-  <script type="module" src="js/app.js"></script>
-</body>
+    <script type="module" src="js/app.js"></script>
+  </body>
 </html>

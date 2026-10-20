@@ -70,7 +70,7 @@ Fonts: [Syne](https://fonts.google.com/specimen/Syne) and [Chivo Mono](https://f
 
 ## Live Demo
 
-
+https://mahshadaliyari.github.io/stopwatch/
 
 ## AI Transparency
 
